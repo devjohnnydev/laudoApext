@@ -114,14 +114,33 @@ let localSamples = getLocalStorage<Amostra[]>('apex_samples', defaultSamples);
 let localLogs = getLocalStorage<LogAuditoria[]>('apex_logs', defaultLogs);
 let localUsers = getLocalStorage<Usuario[]>('apex_users', defaultUsers);
 let localPermissoes = getLocalStorage<Record<Perfil, PermissoesPerfil>>('apex_permissions', defaultPermissoes);
-let currentUser = getLocalStorage<Usuario>('apex_current_user', defaultUsers[1]); // Carlos (Lab) default
+let currentUser = getLocalStorage<Usuario | null>('apex_current_user', null);
 
 export const api = {
   // Autenticação / Perfis
-  getCurrentUser: (): Usuario => {
+  getCurrentUser: (): Usuario | null => {
     return currentUser;
   },
   
+  login: (email: string, senhaProvisoria: string): Usuario | null => {
+    const user = localUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (user && user.ativo) {
+      if (senhaProvisoria === 'apex123' || senhaProvisoria.length > 0) {
+        currentUser = user;
+        setLocalStorage('apex_current_user', user);
+        api.addLog('LOGIN', `Usuário ${user.nome} logou no sistema`);
+        return user;
+      }
+    }
+    return null;
+  },
+
+  logout: () => {
+    api.addLog('LOGOUT', `Usuário saiu do sistema`);
+    currentUser = null;
+    localStorage.removeItem('apex_current_user');
+  },
+
   switchUser: (perfil: Perfil): Usuario => {
     const user = localUsers.find(u => u.perfil === perfil) || localUsers[0];
     currentUser = user;
@@ -267,8 +286,8 @@ export const api = {
       id: `am-${Date.now()}`,
       data: new Date().toISOString(),
       status: 'EM_ANALISE',
-      responsavelId: currentUser.id,
-      responsavel: currentUser,
+      responsavelId: currentUser ? currentUser.id : 'usr-2',
+      responsavel: currentUser || localUsers[1],
       fornecedor: localSuppliers.find(f => f.id === amostra.fornecedorId)
     } as Amostra;
 
@@ -352,8 +371,8 @@ export const api = {
   addLog: (acao: string, detalhes: string) => {
     const newLog: LogAuditoria = {
       id: `log-${Date.now()}`,
-      usuarioId: currentUser.id,
-      usuario: currentUser,
+      usuarioId: currentUser ? currentUser.id : 'anonymous',
+      usuario: currentUser || undefined,
       acao,
       detalhes,
       dataHora: new Date().toISOString()

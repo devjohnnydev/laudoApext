@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, ShieldAlert, Layers, PlusCircle, ClipboardList, Database, Moon, Sun, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, ShieldAlert, Layers, PlusCircle, ClipboardList, Database, Moon, Sun, ShieldCheck, LogOut } from 'lucide-react';
 import { Perfil, Usuario, PermissoesPerfil } from '../types';
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   permissoes: Record<Perfil, PermissoesPerfil>;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -19,7 +20,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSwitchRole,
   theme,
   toggleTheme,
-  permissoes
+  permissoes,
+  onLogout
 }) => {
   // Get permissions for current user's profile
   const userPerms = permissoes[currentUser.perfil] || {
@@ -60,9 +62,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Brand Header with custom SVG Logo */}
       <div className="p-6 border-b border-slate-800 flex flex-col items-center justify-center">
         <div className="flex items-center space-x-2">
-          {/* Logo Mark SVG */}
-          <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-8 flex-shrink-0">
-            <path d="M70 10 L10 185 M100 10 L200 185 M75 130 L220 70 M100 30 L150 120 L85 120 Z" stroke="#10B981" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-10 h-8 flex-shrink-0">
+            {/* Monogram A body */}
+            <path d="M48 8 L12 90 H30 L48 45 L62 78 H80 L52 8 Z" fill="#10B981" />
+            {/* Slash */}
+            <path d="M18 64 L95 42 L62 52 Z" fill="#10B981" />
           </svg>
           <span className="font-extrabold text-xl tracking-wider text-white">APEXTECH</span>
         </div>
@@ -124,13 +128,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Footer controls */}
       <div className="p-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
         <span>v1.0.0 ERP Lab</span>
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-          title={theme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
-        </button>
+        <div className="flex space-x-1.5">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title={theme === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-400" />}
+          </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-1.5 rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-rose-300 border border-rose-900/50 transition-colors"
+              title="Sair do Sistema"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -47,7 +47,7 @@ export default function App() {
   const [globalSearch, setGlobalSearch] = useState<string>('');
 
   // Data states
-  const [currentUser, setCurrentUser] = useState<Usuario>(api.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(api.getCurrentUser());
   const [suppliers, setSuppliers] = useState<Fornecedor[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [stock, setStock] = useState<Estoque[]>([]);
@@ -138,6 +138,52 @@ export default function App() {
 
     // Auto generate sample number
     setSampleNumber(`AM-${new Date().getFullYear()}-${String(smp.length + 1).padStart(3, '0')}`);
+
+    // Ensure mock test sample is present for presentation
+    const testSampleExists = smp.some(s => s.numeroAmostra === 'AM-2026-TEST');
+    if (!testSampleExists && sups.length > 0 && usrs.length > 0) {
+      const mockTestSample: Amostra = {
+        id: 'am-test-1',
+        numeroAmostra: 'AM-2026-TEST',
+        data: new Date().toISOString(),
+        fornecedorId: sups[0].id,
+        responsavelId: usrs[1].id,
+        pesoInicial: 10.00,
+        observacoes: 'Amostra de cabos de cobre revestidos de silicone para triagem rápida.',
+        status: 'APROVADO_CONDICIONAL',
+        grauDificuldade: 'Alto',
+        tempoRealizacao: '45 minutos',
+        observacaoAdmin: 'Lote aprovado com a ressalva de que o teor de polímeros seja auditado na extrusora.',
+        fotoUrl: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=400&auto=format&fit=crop&q=60',
+        componentes: [
+          {
+            materialId: mats[0]?.id || 'mat-1',
+            material: mats[0],
+            peso: 7.20,
+            percentual: 72.0,
+            observacoes: 'Cobre limpo descascado de alta condutividade.',
+            fotoUrl: 'https://images.unsplash.com/photo-1590233649036-ed8601c29668?w=300&auto=format&fit=crop&q=60'
+          },
+          {
+            materialId: mats[3]?.id || 'mat-4',
+            material: mats[3],
+            peso: 2.10,
+            percentual: 21.0,
+            observacoes: 'Capa plástica isoladora.',
+            fotoUrl: 'https://images.unsplash.com/photo-1526649661456-89c7ed4d00b8?w=300&auto=format&fit=crop&q=60'
+          }
+        ],
+        fornecedor: sups[0],
+        responsavel: usrs[1]
+      };
+      
+      const localSamples = JSON.parse(localStorage.getItem('apex_samples') || '[]');
+      if (!localSamples.some((s: any) => s.numeroAmostra === 'AM-2026-TEST')) {
+        localSamples.unshift(mockTestSample);
+        localStorage.setItem('apex_samples', JSON.stringify(localSamples));
+        setSamples([mockTestSample, ...smp]);
+      }
+    }
   };
 
   const handleSwitchRole = (perfil: Perfil) => {
@@ -351,13 +397,13 @@ export default function App() {
     doc.setFillColor(primaryColor);
     doc.rect(0, 0, 210, 35, 'F');
 
-    // Draw stylized logo monogram in PDF (based on the logo image)
+    // Draw stylized logo monogram in PDF (based on the official logo)
     doc.setFillColor(accentColor);
-    doc.triangle(20, 28, 30, 28, 25, 10, 'F');
+    doc.triangle(15, 30, 35, 30, 25, 10, 'F');
     doc.setFillColor(primaryColor);
-    doc.triangle(22, 26, 28, 26, 25, 14, 'F');
+    doc.triangle(20, 28, 30, 28, 25, 18, 'F');
     doc.setFillColor(accentColor);
-    doc.rect(15, 22, 20, 2.5, 'F');
+    doc.triangle(14, 25, 38, 20, 28, 22, 'F');
 
     // Title text
     doc.setTextColor('#FFFFFF');
@@ -382,7 +428,7 @@ export default function App() {
     doc.setFillColor('#ffffff'); 
     doc.triangle(115, 180, 145, 180, 130, 128, 'F'); // Punch hole
     doc.setFillColor(watermarkColor);
-    doc.rect(80, 160, 95, 8, 'F'); // Crossbar slash
+    doc.triangle(80, 172, 160, 152, 130, 158, 'F'); // Crossbar slash
     
     doc.setTextColor('#a2e3c3');
     doc.setFont('Helvetica', 'bold');
@@ -640,6 +686,89 @@ export default function App() {
     ]
   };
 
+  const handleLogout = () => {
+    api.logout();
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12 relative overflow-hidden font-sans">
+        {/* Background gradient blur */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-medium/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-light/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-md w-full space-y-8 p-8 rounded-2xl glass border border-emerald-500/20 shadow-2xl relative z-10">
+          <div className="text-center">
+            {/* High-fidelity Logo */}
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-20 h-16 mx-auto mb-4">
+              <path d="M48 8 L12 90 H30 L48 45 L62 78 H80 L52 8 Z" fill="#10B981" />
+              <path d="M18 64 L95 42 L62 52 Z" fill="#10B981" />
+            </svg>
+            <h2 className="text-2xl font-extrabold tracking-wider text-white">APEXTECH METAIS</h2>
+            <p className="mt-2 text-xs text-slate-400 uppercase tracking-widest">Portal de Análises & ERP Lab</p>
+          </div>
+
+          <form className="mt-8 space-y-4" onSubmit={(e) => {
+            e.preventDefault();
+            const target = e.target as any;
+            const email = target.email.value;
+            const password = target.password.value;
+            const user = api.login(email, password);
+            if (user) {
+              setCurrentUser(user);
+              loadAllData();
+            } else {
+              alert('Credenciais inválidas ou usuário inativo. Use: admin@apextech.com.br / senha: apex123');
+            }
+          }}>
+            <div className="space-y-3 rounded-md shadow-sm">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">E-mail Corporativo</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="ex: admin@apextech.com.br"
+                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-brand-medium rounded-lg px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Senha de Acesso</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  placeholder="ex: apex123"
+                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-brand-medium rounded-lg px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full py-2.5 px-4 bg-brand-medium hover:bg-brand-light text-white text-xs font-bold rounded-lg shadow-lg shadow-brand-medium/25 transition-all duration-200 uppercase tracking-wider"
+              >
+                Entrar no Sistema
+              </button>
+            </div>
+          </form>
+
+          <div className="border-t border-slate-800/80 pt-4 text-center">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Contas para Teste (Senha: apex123):</span>
+            <div className="grid grid-cols-2 gap-2 mt-2 text-[9px] text-slate-400 font-medium">
+              <div className="bg-slate-900/40 p-1.5 rounded border border-slate-800/50">Admin: admin@apextech.com.br</div>
+              <div className="bg-slate-900/40 p-1.5 rounded border border-slate-800/50">Químico: lab@apextech.com.br</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-200">
       {/* SIDEBAR */}
@@ -651,6 +780,7 @@ export default function App() {
         theme={theme}
         toggleTheme={toggleTheme}
         permissoes={permissoes}
+        onLogout={handleLogout}
       />
 
       {/* MAIN CONTAINER */}
@@ -1162,8 +1292,9 @@ export default function App() {
                       
                       {/* Watermark Logo & Text */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-[0.03] dark:opacity-[0.02] select-none">
-                        <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 h-80 mb-4">
-                          <path d="M70 10 L10 185 M100 10 L200 185 M75 130 L220 70 M100 30 L150 120 L85 120 Z" stroke="#10B981" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 h-80 mb-4">
+                          <path d="M48 8 L12 90 H30 L48 45 L62 78 H80 L52 8 Z" fill="#10B981" />
+                          <path d="M18 64 L95 42 L62 52 Z" fill="#10B981" />
                         </svg>
                         <span className="text-xl font-bold tracking-wider text-center text-slate-800 dark:text-white uppercase max-w-lg leading-normal">
                           DOCUMENTO OFICIAL APEXTECH METAIS - CÓPIA E USO NÃO AUTORIZADOS
@@ -1174,8 +1305,9 @@ export default function App() {
                       <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-4">
                         <div>
                           <div className="flex items-center space-x-2">
-                            <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-6 flex-shrink-0">
-                              <path d="M70 10 L10 185 M100 10 L200 185 M75 130 L220 70 M100 30 L150 120 L85 120 Z" stroke="#10B981" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-6 flex-shrink-0">
+                              <path d="M48 8 L12 90 H30 L48 45 L62 78 H80 L52 8 Z" fill="#10B981" />
+                              <path d="M18 64 L95 42 L62 52 Z" fill="#10B981" />
                             </svg>
                             <span className="font-extrabold text-sm tracking-wider text-slate-900 dark:text-white">APEXTECH METAIS</span>
                           </div>
