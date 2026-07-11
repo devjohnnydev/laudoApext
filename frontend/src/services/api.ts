@@ -1,6 +1,6 @@
 import { Fornecedor, Material, Amostra, Estoque, LogAuditoria, Usuario, Perfil, StatusAmostra, PermissoesPerfil } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 
   (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
     ? 'http://localhost:4000/api' 
     : `${window.location.origin}/api`);
