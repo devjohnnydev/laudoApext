@@ -1,0 +1,111 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Perfil {
+  ADMIN
+  LAB
+  COMPRAS
+  PROD
+  FIN
+  DIR
+}
+
+enum StatusAmostra {
+  EM_ANALISE
+  FINALIZADO
+  APROVADO
+  APROVADO_CONDICIONAL
+}
+
+model Usuario {
+  id        String    @id @default(uuid())
+  nome      String
+  email     String    @unique
+  senha     String
+  perfil    Perfil    @default(LAB)
+  ativo     Boolean   @default(true)
+  amostras  Amostra[]
+  logs      LogAuditoria[]
+  createdAt DateTime  @default(now())
+}
+
+model Fornecedor {
+  id           String    @id @default(uuid())
+  razaoSocial  String
+  nomeFantasia String
+  cnpj         String    @unique
+  contato      String
+  telefone     String
+  email        String
+  endereco     String
+  observacoes  String?
+  amostras     Amostra[]
+  createdAt    DateTime  @default(now())
+}
+
+model Material {
+  id          String              @id @default(uuid())
+  nome        String              @unique
+  unidade     String              @default("kg")
+  categoria   String
+  corHex      String              @default("#3E7CB1")
+  observacoes String?
+  componentes ComponenteAmostra[]
+  estoque     Estoque?
+}
+
+model Estoque {
+  id         String   @id @default(uuid())
+  materialId String   @unique
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  quantidade Float    @default(0.0) // em kg
+  updatedAt  DateTime @updatedAt
+}
+
+model Amostra {
+  id              String              @id @default(uuid())
+  numeroAmostra   String              @unique
+  data            DateTime            @default(now())
+  fornecedorId    String
+  fornecedor      Fornecedor          @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+  responsavelId   String
+  responsavel     Usuario             @relation(fields: [responsavelId], references: [id])
+  pesoInicial     Float
+  observacoes     String?
+  fotoUrl         String?
+  status          StatusAmostra       @default(EM_ANALISE)
+  codigoQR        String?
+  laudoPDFUrl     String?
+  componentes     ComponenteAmostra[]
+  grauDificuldade String?
+  tempoRealizacao String?
+  observacaoAdmin String?
+  createdAt       DateTime            @default(now())
+}
+
+model ComponenteAmostra {
+  id          String   @id @default(uuid())
+  amostraId   String
+  amostra     Amostra  @relation(fields: [amostraId], references: [id], onDelete: Cascade)
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  peso        Float
+  percentual  Float
+  observacoes String?
+  fotoUrl     String?
+}
+
+model LogAuditoria {
+  id        String   @id @default(uuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  acao      String
+  detalhes  String
+  dataHora  DateTime @default(now())
+}

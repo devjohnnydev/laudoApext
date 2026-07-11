@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.DS_Store
+*.log
+*.tmp
+.vscode/
+.idea/
+.gemini/
+.agents/
+.system_generated/
+task-*.log
+task.md
+implementation_plan.md
+walkthrough.md
